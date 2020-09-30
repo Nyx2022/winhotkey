@@ -16,10 +16,17 @@ const (
 	// ModShift either SHIFT key must be held down.
 	ModShift
 	// ModWin either WINDOWS key was held down.
-	//These keys are labeled with the Windows logo. Keyboard shortcuts that involve the WINDOWS key are reserved for use by the operating system.
+	// These keys are labeled with the Windows logo. Keyboard shortcuts that involve the WINDOWS key are reserved for use by the operating system.
 	ModWin
 	// ModNoRepeat Changes the hotkey behavior so that the keyboard auto-repeat does not yield multiple hotkey notifications.
 	ModNoRepeat = 0x4000 // Windows Vista:  This flag is not supported.
+)
+
+var (
+	getmsg    ProcInterface
+	reghotkey ProcInterface
+	user32    *syscall.DLL
+	keys      map[int16]*Hotkey
 )
 
 // Hotkey defines a key configuration
@@ -63,13 +70,6 @@ func (h *Hotkey) String() string {
 	}
 	return fmt.Sprintf("Hotkey[ID: %d, %s%c]", h.ID, mod.String(), h.KeyCode)
 }
-
-var (
-	getmsg    ProcInterface
-	reghotkey ProcInterface
-	user32    *syscall.DLL
-	keys      map[int16]*Hotkey
-)
 
 // ProcInterface wrapper for syscall.Proc.Call to enable mocking in tests
 type ProcInterface interface {

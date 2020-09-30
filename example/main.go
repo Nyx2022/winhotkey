@@ -36,6 +36,8 @@ func main() {
 			CallbackFunc: handleCallback,
 		},
 	}
+
+	// Register our hotkeys
 	for _, hk := range hotkeys {
 		if err := winhotkey.RegisterHotkey(hk); err != nil {
 			log.Fatal(err)
@@ -46,6 +48,7 @@ func main() {
 	q := make(chan os.Signal)
 	signal.Notify(q, os.Interrupt)
 
+	// Handle callbacks on channel and CTRL-C
 	go func() {
 		for {
 			select {
