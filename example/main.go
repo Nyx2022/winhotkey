@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 	"os/signal"
@@ -48,12 +49,18 @@ func main() {
 	q := make(chan os.Signal)
 	signal.Notify(q, os.Interrupt)
 
+	ctx, cancel := context.WithCancel(context.Background())
 	// Handle callbacks on channel and CTRL-C
 	go func() {
 		for {
 			select {
 			case h := <-hotkeyChan:
 				log.Println("CallbackChan", h.String(), "pressed")
+
+				if h.ID == 3 {
+					cancel()
+					return
+				}
 
 			case sig := <-q:
 				log.Println(sig)
@@ -65,7 +72,7 @@ func main() {
 	}()
 
 	// The main loop must run in the mainthread or else we won't be getting any messages from user32
-	if err := winhotkey.Run(); err != nil {
+	if err := winhotkey.Run(ctx); err != nil {
 		log.Fatal(err)
 	}
 }

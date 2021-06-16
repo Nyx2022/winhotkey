@@ -1,10 +1,12 @@
 package winhotkey
 
 import (
+	"context"
 	"fmt"
 	"runtime"
 	"strings"
 	"syscall"
+	"time"
 	"unsafe"
 )
 
@@ -23,7 +25,7 @@ const (
 )
 
 var (
-	getmsg    ProcInterface
+	peekmsg   ProcInterface
 	reghotkey ProcInterface
 	user32    *syscall.DLL
 	keys      map[int16]*Hotkey
@@ -82,17 +84,24 @@ func init() {
 	user32 = syscall.MustLoadDLL("user32")
 	// https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-registerhotkey
 	reghotkey = user32.MustFindProc("RegisterHotKey")
-	// https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getmessagew
-	getmsg = user32.MustFindProc("GetMessageW")
+	// https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-peekmessagew
+	peekmsg = user32.MustFindProc("PeekMessageW")
 }
 
 // Run the Hotkey handler
-func Run() error {
+func Run(ctx context.Context) error {
+outer:
 	for {
+
 		var msg = &MSG{}
-		r1, _, err := getmsg.Call(uintptr(unsafe.Pointer(msg)), 0, 0, 0)
-		if err != nil && r1 != 1 {
+		_, _, err := peekmsg.Call(uintptr(unsafe.Pointer(msg)), 0, 0, 0, 1)
+		if err != nil && err.Error() != "The operation completed successfully." {
 			return err
+		}
+		select {
+		case <-ctx.Done():
+			break outer
+		default:
 		}
 		if id := msg.WPARAM; id != 0 {
 			h, found := keys[id]
@@ -108,7 +117,9 @@ func Run() error {
 				}
 			}
 		}
+		time.Sleep(50 * time.Millisecond)
 	}
+	return nil
 }
 
 // RegisterHotkey registers a Hotkey

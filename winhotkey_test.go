@@ -1,6 +1,7 @@
 package winhotkey
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"testing"
@@ -113,7 +114,7 @@ func (tg *testget) Call(a ...uintptr) (r1 uintptr, r2 uintptr, lastErr error) {
 }
 func TestRun(t *testing.T) {
 	c := make(chan *Hotkey, 10)
-	getmsg = &testget{
+	peekmsg = &testget{
 		t: t,
 		c: c,
 	}
@@ -141,7 +142,7 @@ func TestRun(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := Run(); (err != nil) != tt.wantErr {
+			if err := Run(context.Background()); (err != nil) != tt.wantErr {
 				t.Errorf("Run() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
